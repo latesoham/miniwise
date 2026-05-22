@@ -1,7 +1,8 @@
 import { useState } from "react";
 import TicketCard from "./TicketCard";
+import { Droppable, Draggable } from "@hello-pangea/dnd";
 
-function Column({ title, tickets, moveTicket, deleteTicket, addTicket }) {
+function Column({ title, tickets, moveTicket, deleteTicket, addTicket,editTicket, }) {
 
   const [input, setInput] = useState("");
   const [priority, setPriority] = useState("Medium");
@@ -69,31 +70,72 @@ function Column({ title, tickets, moveTicket, deleteTicket, addTicket }) {
       </div>
 
       {/* Ticket List */}
-      <div className="space-y-3">
+<Droppable
+  droppableId={
+    title === "Todo"
+      ? "todo"
+      : title === "In Progress"
+      ? "inProgress"
+      : "done"
+  }
+>
+  {(provided) => (
+    <div
+      ref={provided.innerRef}
+      {...provided.droppableProps}
+      className="space-y-3"
+    >
 
-        {tickets.map((ticket, index) => (
-          <div key={ticket.id || index}>
+      {tickets.map((ticket, index) => (
 
-            <TicketCard
-              title={ticket.title}
-              priority={ticket.priority}
-              tag={ticket.tag}
-              onDelete={() => deleteTicket(ticket.id)}
-            />
+        <Draggable
+          key={ticket.id.toString()}
+          draggableId={ticket.id.toString()}
+          index={index}
+        >
+          {(provided) => (
 
-            {moveTicket && (
-              <button
-                onClick={() => moveTicket(index)}
-                className="text-xs text-blue-500 hover:text-blue-700 transition"
-              >
-                Move →
-              </button>
-            )}
+            <div
+              ref={provided.innerRef}
+              {...provided.draggableProps}
+              {...provided.dragHandleProps}
+            >
 
-          </div>
-        ))}
+              <TicketCard
+                title={ticket.title}
+                priority={ticket.priority}
+                tag={ticket.tag}
+                onDelete={() => deleteTicket(ticket.id)}
+                onEdit={() => {
 
-      </div>
+                  const newTitle = prompt(
+                    "Edit title",
+                    ticket.title
+                  );
+
+                  if (!newTitle) return;
+
+                  const updatedTicket = {
+                    ...ticket,
+                    title: newTitle,
+                  };
+
+                  editTicket(updatedTicket);
+                }}
+              />
+
+            </div>
+
+          )}
+        </Draggable>
+
+      ))}
+
+      {provided.placeholder}
+
+    </div>
+  )}
+</Droppable>
     </div>
   );
 }

@@ -52,7 +52,7 @@
 // export default TicketCard;
 
 
-function TicketCard({ title, priority, tag, onDelete }) {
+function TicketCard({ title, priority, tag, onDelete, onEdit }) {
 
   const tagColor = {
     React: "border-blue-500",
@@ -62,40 +62,62 @@ function TicketCard({ title, priority, tag, onDelete }) {
   };
 
   return (
-    <div
-      className={`bg-white p-3 rounded-xl shadow-sm mb-4 flex justify-between items-start 
-      border-l-4 ${tagColor[tag] || "border-gray-300"}
-      hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-in-out`}
-    >
-      <div>
-        <p className="text-sm font-semibold text-gray-800">
-          {title}
-        </p>
+<div
+  className={`bg-white p-3 rounded-xl shadow-sm mb-4 border-l-4 
+  ${tagColor[tag] || "border-gray-300"}
+  hover:shadow-lg hover:-translate-y-1 transition-all duration-200`}
+>
 
-        <p className="text-xs text-gray-500 mt-1">
-          #{tag}
-        </p>
+  {/* Top Row */}
+  <div className="flex justify-between items-start">
 
-        <span
-          className={`text-xs px-2 py-1 rounded-full font-semibold mt-2 inline-block ${
-            priority === "High"
-              ? "bg-red-100 text-red-600"
-              : priority === "Medium"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {priority}
-        </span>
-      </div>
+    {/* Left Side */}
+    <div>
+
+      <p className="text-sm font-semibold text-gray-800">
+        {title}
+      </p>
+
+      <p className="text-xs text-gray-500 mt-1">
+        #{tag}
+      </p>
+
+      <span
+        className={`text-xs px-2 py-1 rounded-full font-semibold mt-2 inline-block ${
+          priority === "High"
+            ? "bg-red-100 text-red-600"
+            : priority === "Medium"
+            ? "bg-yellow-100 text-yellow-700"
+            : "bg-green-100 text-green-600"
+        }`}
+      >
+        {priority}
+      </span>
+
+    </div>
+
+    {/* Right Side Icons */}
+    <div className="flex items-center gap-2 ml-3">
+
+      <button
+        onClick={onEdit}
+        className="hover:scale-110 transition-transform"
+      >
+        ✏️
+      </button>
 
       <button
         onClick={onDelete}
-        className="text-gray-400 hover:text-red-500 transition text-sm"
+        className="hover:scale-110 transition-transform"
       >
-        ✕
+        🗑️
       </button>
+
     </div>
+
+  </div>
+
+</div>
   );
 }
 

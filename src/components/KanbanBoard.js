@@ -1,5 +1,6 @@
 import Column from "./Column";
 import { useEffect, useState } from "react";
+import {DragDropContext,Droppable,Draggable,} from "@hello-pangea/dnd";
 
 function KanbanBoard() {
 
@@ -28,17 +29,31 @@ function KanbanBoard() {
 
   }, []);
 
-  // Move ticket locally
-  const moveTicket = (from, to, index) => {
+  // Move ticket in sql
+const moveTicket = async (from, to, index) => {
 
-    const item = tickets[from][index];
+  const item = tickets[from][index];
 
-    item.status =
-      to === "todo"
-        ? "Todo"
-        : to === "inProgress"
-        ? "In Progress"
-        : "Done";
+  const newStatus =
+    to === "todo"
+      ? "Todo"
+      : to === "inProgress"
+      ? "In Progress"
+      : "Done";
+
+  try {
+
+    await fetch(`http://localhost:8080/tickets/${item.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: newStatus,
+      }),
+    });
+
+    item.status = newStatus;
 
     const updatedFrom = tickets[from].filter((_, i) => i !== index);
 
@@ -49,7 +64,55 @@ function KanbanBoard() {
       [from]: updatedFrom,
       [to]: updatedTo,
     });
-  };
+
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const handleDragEnd = async (result) => {
+
+  if (!result.destination) return;
+
+  const sourceColumn = result.source.droppableId;
+  const destinationColumn = result.destination.droppableId;
+
+  if (sourceColumn === destinationColumn) return;
+
+  const sourceItems = [...tickets[sourceColumn]];
+  const destinationItems = [...tickets[destinationColumn]];
+
+  const [movedItem] = sourceItems.splice(result.source.index, 1);
+
+  movedItem.status =
+    destinationColumn === "todo"
+      ? "Todo"
+      : destinationColumn === "inProgress"
+      ? "In Progress"
+      : "Done";
+
+  destinationItems.splice(result.destination.index, 0, movedItem);
+
+  setTickets({
+    ...tickets,
+    [sourceColumn]: sourceItems,
+    [destinationColumn]: destinationItems,
+  });
+
+  try {
+
+    await fetch(`http://localhost:8080/tickets/${movedItem.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(movedItem),
+    });
+
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   // Add ticket in sql
 const addTicketToColumn = async (column, title, priority, tag) => {
@@ -113,6 +176,32 @@ const deleteTicket = async (column, ticketId) => {
   }
 };
 
+const editTicket = async (column, updatedTicket) => {
+
+  try {
+
+    await fetch(`http://localhost:8080/tickets/${updatedTicket.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updatedTicket),
+    });
+
+    const updatedTickets = tickets[column].map((ticket) =>
+      ticket.id === updatedTicket.id ? updatedTicket : ticket
+    );
+
+    setTickets({
+      ...tickets,
+      [column]: updatedTickets,
+    });
+
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   // Progress calculation
   const totalTasks =
     tickets.todo.length +
@@ -147,6 +236,7 @@ const deleteTicket = async (column, ticketId) => {
       </div>
 
       {/* Board */}
+    <DragDropContext onDragEnd={handleDragEnd}>
       <div className="flex gap-8 justify-center flex-wrap max-w-7xl mx-auto">
 
         <Column
@@ -157,6 +247,9 @@ const deleteTicket = async (column, ticketId) => {
           addTicket={(title, priority, tag) =>
             addTicketToColumn("todo", title, priority, tag)
           }
+          editTicket={(updatedTicket) =>
+            editTicket("todo", updatedTicket)
+          }
         />
 
         <Column
@@ -166,19 +259,27 @@ const deleteTicket = async (column, ticketId) => {
           deleteTicket={(ticketId) => deleteTicket("inProgress", ticketId)}
           addTicket={(title, priority, tag) =>
             addTicketToColumn("inProgress", title, priority, tag)
-          }
+            }
+          editTicket={(updatedTicket) =>
+            editTicket("inProgress", updatedTicket)
+            }
         />
 
         <Column
           title="Done"
           tickets={tickets.done}
           deleteTicket={(ticketId) => deleteTicket("done", ticketId)}
+          moveTicket={() => {}}
           addTicket={(title, priority, tag) =>
             addTicketToColumn("done", title, priority, tag)
+          }
+          editTicket={(updatedTicket) =>
+            editTicket("done", updatedTicket)
           }
         />
 
       </div>
+    </DragDropContext>
     </div>
   );
 }
